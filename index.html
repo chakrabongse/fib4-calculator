@@ -16,12 +16,11 @@
     }
   </script>
   
-<style>
+  <style>
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f4f7f9;
         }
-        /* Custom styles for better visual */
         .card {
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             transition: transform 0.3s ease;
@@ -40,31 +39,24 @@
 </head>
 <body class="p-4 sm:p-8 min-h-screen flex items-center justify-center">
 
-    <div class="w-full max-w-lg bg-white p-6 sm:p-8 rounded-xl card">
+    <!-- FIB-4 Calculator Card -->
+    <div class="w-full max-w-lg bg-white p-6 sm:p-8 rounded-xl card relative">
         <h1 class="text-3xl font-bold text-gray-800 mb-2 text-center">เครื่องคำนวณ FIB-4</h1>
         <p class="text-center text-gray-600 mb-6">ประเมินความเสี่ยงภาวะพังผืดขั้นสูงในตับ (Advanced Fibrosis) สำหรับผู้ป่วย NAFLD/MASLD</p>
 
-        <!-- Input Form -->
         <div class="space-y-4">
-            <!-- Age -->
             <label class="block">
                 <span class="text-gray-700 font-semibold">อายุ (Age) <span class="text-sm font-normal text-gray-500">(ปี)</span></span>
                 <input type="number" id="inputAge" class="mt-1 block w-full input-field" min="1" required placeholder="เช่น 45">
             </label>
-            
-            <!-- AST -->
             <label class="block">
                 <span class="text-gray-700 font-semibold">ค่า AST <span class="text-sm font-normal text-gray-500">(U/L)</span></span>
                 <input type="number" id="inputAST" class="mt-1 block w-full input-field" min="1" required placeholder="เช่น 35">
             </label>
-
-            <!-- ALT -->
             <label class="block">
                 <span class="text-gray-700 font-semibold">ค่า ALT <span class="text-sm font-normal text-gray-500">(U/L)</span></span>
                 <input type="number" id="inputALT" class="mt-1 block w-full input-field" min="1" required placeholder="เช่น 30">
             </label>
-
-            <!-- Platelets -->
             <label class="block">
                 <span class="text-gray-700 font-semibold">เกล็ดเลือด (Platelet Count) <span class="text-sm font-normal text-gray-500">(10⁹/L)</span></span>
                 <input type="number" id="inputPlatelets" class="mt-1 block w-full input-field" min="10" required placeholder="เช่น 250">
@@ -76,17 +68,13 @@
             คำนวณ FIB-4
         </button>
 
-        <!-- Result Display -->
         <div id="resultContainer" class="mt-8 p-5 rounded-xl border-2 border-gray-200 hidden">
             <h2 class="text-xl font-bold mb-3 text-gray-800">ผลการประเมิน</h2>
             <p id="fib4Score" class="text-2xl font-mono mb-4 text-center"></p>
-            
             <div id="riskDisplay" class="p-4 rounded-lg text-center font-bold"></div>
-
             <div id="recommendation" class="mt-4 text-gray-700"></div>
         </div>
-        
-        <!-- Error/Warning Modal -->
+
         <div id="errorModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4">
             <div class="bg-white p-6 rounded-lg max-w-sm w-full shadow-2xl">
                 <h3 class="text-xl font-bold text-red-600 mb-3">⚠️ ข้อผิดพลาด</h3>
@@ -103,18 +91,20 @@
         </p>
     </div>
 
+    <!-- ปุ่มติดตั้ง PWA -->
+    <a id="installAppBtn" href="#" 
+       class="fixed bottom-5 right-5 bg-blue-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:bg-blue-700 transition transform hover:scale-105 hidden">
+       ⬇️ ติดตั้งแอป
+    </a>
+
     <script>
-        /**
-         * Calculates the FIB-4 score and determines the risk category based on the provided NAFLD algorithm cutoffs.
-         */
+        // FIB-4 Calculation Function
         function calculateFIB4() {
-            // 1. Get and validate input values
             const age = parseFloat(document.getElementById('inputAge').value);
             const ast = parseFloat(document.getElementById('inputAST').value);
             const alt = parseFloat(document.getElementById('inputALT').value);
             const platelets = parseFloat(document.getElementById('inputPlatelets').value);
 
-            // Hide previous results and errors
             document.getElementById('resultContainer').classList.add('hidden');
             document.getElementById('errorModal').classList.add('hidden');
 
@@ -125,52 +115,59 @@
                 return;
             }
 
-            // Platelet count input is in 10^3/uL, but the FIB-4 formula uses 10^9/L.
-            // Since 10^3/uL is equivalent to 10^9/L, we can use the input value directly in the calculation.
-            // However, typical lab reports might give platelets in (x 10^3/uL). We assume the input is in (x 10^9/L).
-            // Common practice: use Platelets in (10^9/L). If user inputs 250 (which is 250,000/uL), it means 250 x 10^9/L.
-            
-            // 2. Calculate FIB-4 score
             const fib4 = (age * ast) / (platelets * Math.sqrt(alt));
-            const roundedFib4 = fib4.toFixed(2); // Round to 2 decimal places for display
+            const roundedFib4 = fib4.toFixed(2);
 
-            // 3. Determine Risk Classification (based on the algorithm image)
             let riskLevel = '';
-            let riskClass = ''; // Tailwind classes for styling
+            let riskClass = '';
             let recommendationText = '';
 
             if (fib4 < 1.3) {
                 riskLevel = 'ความเสี่ยงต่ำ (Low Risk)';
                 riskClass = 'bg-green-100 text-green-800 border-green-300';
-                recommendationText = 'ความเสี่ยงต่ำต่อภาวะพังผืดขั้นสูง: แนะนำให้ประเมิน FIB-4 ซ้ำใน 2-3 ปี (ยกเว้นมีอาการทางคลินิกเปลี่ยนแปลง)';
+                recommendationText = 'ความเสี่ยงต่ำต่อภาวะพังผืดขั้นสูง: แนะนำให้ประเมิน FIB-4 ซ้ำใน 2-3 ปี';
             } else if (fib4 >= 1.3 && fib4 <= 2.67) {
                 riskLevel = 'ความเสี่ยงปานกลาง/ไม่แน่ชัด (Indeterminate Risk)';
                 riskClass = 'bg-yellow-100 text-yellow-800 border-yellow-300';
-                recommendationText = 'ความเสี่ยงปานกลาง: แนะนำให้ทำการตรวจวัดความแข็งตัวของตับ (Liver Stiffness Measurement, LSM) ด้วย FibroScan หรือ MRE เพื่อประเมินเพิ่มเติม';
-            } else { // fib4 > 2.67
+                recommendationText = 'แนะนำให้ทำการตรวจวัดความแข็งตัวของตับ (LSM/FibroScan)';
+            } else {
                 riskLevel = 'ความเสี่ยงสูง (High Risk)';
                 riskClass = 'bg-red-100 text-red-800 border-red-300';
-                recommendationText = 'ความเสี่ยงสูงต่อภาวะพังผืดขั้นสูง: แนะนำให้ปรึกษาแพทย์ผู้เชี่ยวชาญด้านตับ (Hepatologist) เพื่อประเมินและวางแผนการรักษาต่อไป';
+                recommendationText = 'แนะนำให้ปรึกษาแพทย์ผู้เชี่ยวชาญด้านตับ';
             }
 
-            // 4. Display Result
             const resultContainer = document.getElementById('resultContainer');
             const fib4ScoreDisplay = document.getElementById('fib4Score');
             const riskDisplay = document.getElementById('riskDisplay');
             const recommendation = document.getElementById('recommendation');
 
             fib4ScoreDisplay.textContent = `FIB-4 Score: ${roundedFib4}`;
-            
             riskDisplay.textContent = riskLevel;
             riskDisplay.className = `p-4 rounded-lg text-center font-bold ${riskClass}`;
-
-            recommendation.innerHTML = `
-                <p class="font-semibold mb-2">ข้อแนะนำ:</p>
-                <p class="${riskClass.split(' ')[2].replace('text', 'border')} p-3 rounded-lg border-l-4">${recommendationText}</p>
-            `;
+            recommendation.innerHTML = `<p class="font-semibold mb-2">ข้อแนะนำ:</p>
+                <p class="${riskClass.split(' ')[2].replace('text', 'border')} p-3 rounded-lg border-l-4">${recommendationText}</p>`;
 
             resultContainer.classList.remove('hidden');
         }
+
+        // PWA Install Button
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installAppBtn').classList.remove('hidden');
+        });
+
+        document.getElementById('installAppBtn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const choiceResult = await deferredPrompt.userChoice;
+                console.log(`User response: ${choiceResult.outcome}`);
+                deferredPrompt = null;
+                document.getElementById('installAppBtn').classList.add('hidden');
+            }
+        });
     </script>
 </body>
 </html>
