@@ -1,7 +1,7 @@
 {
   "id": "/index.html",
   "name": "เครื่องคำนวณ FIB-4 สำหรับ NAFLD",
-  "short_name": "FIB-4 Calc",
+  "short_name": "FIB-4",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
