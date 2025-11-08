@@ -1,21 +1,21 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>เครื่องคำนวณ FIB-4 สำหรับ NAFLD</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#2563eb">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="icon" href="icons/icon-192.png">
-    <link rel="apple-touch-icon" href="icons/icon-512.png">
-    <script>
-        // ติดตั้ง service worker สำหรับ PWA
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('service-worker.js');
-        }
-    </script>
-    
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>เครื่องคำนวณ FIB-4 สำหรับ NAFLD</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-512.png">
+  <script>
+    // ติดตั้ง service worker สำหรับ PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js');
+    }
+  </script>
+  
 <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -39,26 +39,33 @@
     </style>
 </head>
 <body class="p-4 sm:p-8 min-h-screen flex items-center justify-center">
+
     <div class="w-full max-w-lg bg-white p-6 sm:p-8 rounded-xl card">
+        <img src="icons/logo.png" alt="">
         <h1 class="text-3xl font-bold text-gray-800 mb-2 text-center">เครื่องคำนวณ FIB-4</h1>
         <p class="text-center text-gray-600 mb-6">ประเมินความเสี่ยงภาวะพังผืดขั้นสูงในตับ (Advanced Fibrosis) สำหรับผู้ป่วย NAFLD/MASLD</p>
 
+        <!-- Input Form -->
         <div class="space-y-4">
+            <!-- Age -->
             <label class="block">
                 <span class="text-gray-700 font-semibold">อายุ (Age) <span class="text-sm font-normal text-gray-500">(ปี)</span></span>
                 <input type="number" id="inputAge" class="mt-1 block w-full input-field" min="1" required placeholder="เช่น 45">
             </label>
             
+            <!-- AST -->
             <label class="block">
                 <span class="text-gray-700 font-semibold">ค่า AST <span class="text-sm font-normal text-gray-500">(U/L)</span></span>
                 <input type="number" id="inputAST" class="mt-1 block w-full input-field" min="1" required placeholder="เช่น 35">
             </label>
 
+            <!-- ALT -->
             <label class="block">
                 <span class="text-gray-700 font-semibold">ค่า ALT <span class="text-sm font-normal text-gray-500">(U/L)</span></span>
                 <input type="number" id="inputALT" class="mt-1 block w-full input-field" min="1" required placeholder="เช่น 30">
             </label>
 
+            <!-- Platelets -->
             <label class="block">
                 <span class="text-gray-700 font-semibold">เกล็ดเลือด (Platelet Count) <span class="text-sm font-normal text-gray-500">(10⁹/L)</span></span>
                 <input type="number" id="inputPlatelets" class="mt-1 block w-full input-field" min="10" required placeholder="เช่น 250">
@@ -69,12 +76,8 @@
                 class="w-full mt-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition duration-300 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-blue-300">
             คำนวณ FIB-4
         </button>
-        
-        <button id="installAppButton" onclick="handleInstallButtonClick()"
-                class="w-full mt-3 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition duration-300 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-indigo-300 hidden">
-            ⬇️ ติดตั้งแอป (Add to Home Screen)
-        </button>
 
+        <!-- Result Display -->
         <div id="resultContainer" class="mt-8 p-5 rounded-xl border-2 border-gray-200 hidden">
             <h2 class="text-xl font-bold mb-3 text-gray-800">ผลการประเมิน</h2>
             <p id="fib4Score" class="text-2xl font-mono mb-4 text-center"></p>
@@ -84,7 +87,8 @@
             <div id="recommendation" class="mt-4 text-gray-700"></div>
         </div>
         
-        <div id="errorModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <!-- Error/Warning Modal -->
+        <div id="errorModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4">
             <div class="bg-white p-6 rounded-lg max-w-sm w-full shadow-2xl">
                 <h3 class="text-xl font-bold text-red-600 mb-3">⚠️ ข้อผิดพลาด</h3>
                 <p id="errorMessage" class="text-gray-700 mb-4">กรุณากรอกข้อมูลให้ครบถ้วนและตรวจสอบว่าค่าเป็นตัวเลขที่ถูกต้อง</p>
@@ -101,59 +105,11 @@
     </div>
 
     <script>
-        let deferredPrompt; // ใช้งานสำหรับ PWA Install
-        
-        // 1. ตรวจสอบและบันทึก Prompt สำหรับการติดตั้ง PWA
-        window.addEventListener('beforeinstallprompt', (e) => {
-            // ป้องกันการแสดง prompt อัตโนมัติของเบราว์เซอร์
-            e.preventDefault();
-            // เก็บ event ไว้เพื่อใช้ในการแสดงผลเมื่อผู้ใช้คลิกปุ่ม
-            deferredPrompt = e;
-            // แสดงปุ่มติดตั้งแอป
-            showInstallPromotion();
-        });
-
-        // 2. แสดงปุ่มติดตั้งแอป
-        function showInstallPromotion() {
-            const installButton = document.getElementById('installAppButton');
-            // ตรวจสอบว่า deferredPrompt มีค่า และยังไม่ถูกติดตั้ง
-            if (deferredPrompt) {
-                installButton.classList.remove('hidden');
-            }
-        }
-
-        // 3. จัดการการคลิกปุ่มติดตั้ง
-        function handleInstallButtonClick() {
-            const installButton = document.getElementById('installAppButton');
-            if (deferredPrompt) {
-                // แสดง prompt การติดตั้ง
-                deferredPrompt.prompt();
-                // รอการตอบสนองจากผู้ใช้
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('User accepted the A2HS prompt');
-                    } else {
-                        console.log('User dismissed the A2HS prompt');
-                    }
-                    // ล้าง deferredPrompt เมื่อใช้งานแล้ว
-                    deferredPrompt = null;
-                    // ซ่อนปุ่มทันทีเมื่อมีการคลิก
-                    installButton.classList.add('hidden');
-                });
-            }
-        }
-
-        // เพิ่ม Listener สำหรับกรณีที่ติดตั้งสำเร็จแล้ว
-        window.addEventListener('appinstalled', () => {
-            document.getElementById('installAppButton').classList.add('hidden');
-        });
-
-
         /**
          * Calculates the FIB-4 score and determines the risk category based on the provided NAFLD algorithm cutoffs.
          */
         function calculateFIB4() {
-            // ... (โค้ดเดิม)
+            // 1. Get and validate input values
             const age = parseFloat(document.getElementById('inputAge').value);
             const ast = parseFloat(document.getElementById('inputAST').value);
             const alt = parseFloat(document.getElementById('inputALT').value);
@@ -169,17 +125,21 @@
                 document.getElementById('errorModal').classList.remove('hidden');
                 return;
             }
+
+            // Platelet count input is in 10^3/uL, but the FIB-4 formula uses 10^9/L.
+            // Since 10^3/uL is equivalent to 10^9/L, we can use the input value directly in the calculation.
+            // However, typical lab reports might give platelets in (x 10^3/uL). We assume the input is in (x 10^9/L).
+            // Common practice: use Platelets in (10^9/L). If user inputs 250 (which is 250,000/uL), it means 250 x 10^9/L.
             
             // 2. Calculate FIB-4 score
             const fib4 = (age * ast) / (platelets * Math.sqrt(alt));
             const roundedFib4 = fib4.toFixed(2); // Round to 2 decimal places for display
 
-            // 3. Determine Risk Classification
+            // 3. Determine Risk Classification (based on the algorithm image)
             let riskLevel = '';
             let riskClass = ''; // Tailwind classes for styling
             let recommendationText = '';
 
-            // Cutoffs: < 1.3 (Low), > 2.67 (High)
             if (fib4 < 1.3) {
                 riskLevel = 'ความเสี่ยงต่ำ (Low Risk)';
                 riskClass = 'bg-green-100 text-green-800 border-green-300';
