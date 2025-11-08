@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>เครื่องคำนวณ FIB-4 สำหรับ NAFLD</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-512.png">
+  <script>
+    // ติดตั้ง service worker สำหรับ PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js');
+    }
+  </script>
+  
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f9;
+        }
+        /* Custom styles for better visual */
+        .card {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+        }
+        .input-field {
+            border: 1px solid #cbd5e1;
+            padding: 10px;
+            border-radius: 8px;
+            transition: border-color 0.3s;
+        }
+        .input-field:focus {
+            border-color: #3b82f6;
+            outline: none;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8 min-h-screen flex items-center justify-center">
+
+    <div class="w-full max-w-lg bg-white p-6 sm:p-8 rounded-xl card">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2 text-center">เครื่องคำนวณ FIB-4</h1>
+        <p class="text-center text-gray-600 mb-6">ประเมินความเสี่ยงภาวะพังผืดขั้นสูงในตับ (Advanced Fibrosis) สำหรับผู้ป่วย NAFLD/MASLD</p>
+
+        <!-- Input Form -->
+        <div class="space-y-4">
+            <!-- Age -->
+            <label class="block">
+                <span class="text-gray-700 font-semibold">อายุ (Age) <span class="text-sm font-normal text-gray-500">(ปี)</span></span>
+                <input type="number" id="inputAge" class="mt-1 block w-full input-field" min="1" required placeholder="เช่น 45">
+            </label>
+            
+            <!-- AST -->
+            <label class="block">
+                <span class="text-gray-700 font-semibold">ค่า AST <span class="text-sm font-normal text-gray-500">(U/L)</span></span>
+                <input type="number" id="inputAST" class="mt-1 block w-full input-field" min="1" required placeholder="เช่น 35">
+            </label>
+
+            <!-- ALT -->
+            <label class="block">
+                <span class="text-gray-700 font-semibold">ค่า ALT <span class="text-sm font-normal text-gray-500">(U/L)</span></span>
+                <input type="number" id="inputALT" class="mt-1 block w-full input-field" min="1" required placeholder="เช่น 30">
+            </label>
+
+            <!-- Platelets -->
+            <label class="block">
+                <span class="text-gray-700 font-semibold">เกล็ดเลือด (Platelet Count) <span class="text-sm font-normal text-gray-500">(10⁹/L)</span></span>
+                <input type="number" id="inputPlatelets" class="mt-1 block w-full input-field" min="10" required placeholder="เช่น 250">
+            </label>
+        </div>
+
+        <button onclick="calculateFIB4()" 
+                class="w-full mt-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition duration-300 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-blue-300">
+            คำนวณ FIB-4
+        </button>
+
+        <!-- Result Display -->
+        <div id="resultContainer" class="mt-8 p-5 rounded-xl border-2 border-gray-200 hidden">
+            <h2 class="text-xl font-bold mb-3 text-gray-800">ผลการประเมิน</h2>
+            <p id="fib4Score" class="text-2xl font-mono mb-4 text-center"></p>
+            
+            <div id="riskDisplay" class="p-4 rounded-lg text-center font-bold"></div>
+
+            <div id="recommendation" class="mt-4 text-gray-700"></div>
+        </div>
+        
+        <!-- Error/Warning Modal -->
+        <div id="errorModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4">
+            <div class="bg-white p-6 rounded-lg max-w-sm w-full shadow-2xl">
+                <h3 class="text-xl font-bold text-red-600 mb-3">⚠️ ข้อผิดพลาด</h3>
+                <p id="errorMessage" class="text-gray-700 mb-4">กรุณากรอกข้อมูลให้ครบถ้วนและตรวจสอบว่าค่าเป็นตัวเลขที่ถูกต้อง</p>
+                <button onclick="document.getElementById('errorModal').classList.add('hidden')" 
+                        class="w-full py-2 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition">
+                    ตกลง
+                </button>
+            </div>
+        </div>
+
+        <p class="text-xs text-gray-400 mt-6 text-center">
+            *ค่า FIB-4 ที่ได้นี้ใช้เพื่อคัดกรองความเสี่ยงเบื้องต้นเท่านั้น ไม่สามารถใช้แทนการวินิจฉัยทางการแพทย์ได้
+        </p>
+    </div>
+
+    <script>
+        /**
+         * Calculates the FIB-4 score and determines the risk category based on the provided NAFLD algorithm cutoffs.
+         */
+        function calculateFIB4() {
+            // 1. Get and validate input values
+            const age = parseFloat(document.getElementById('inputAge').value);
+            const ast = parseFloat(document.getElementById('inputAST').value);
+            const alt = parseFloat(document.getElementById('inputALT').value);
+            const platelets = parseFloat(document.getElementById('inputPlatelets').value);
+
+            // Hide previous results and errors
+            document.getElementById('resultContainer').classList.add('hidden');
+            document.getElementById('errorModal').classList.add('hidden');
+
+            if (isNaN(age) || isNaN(ast) || isNaN(alt) || isNaN(platelets) || 
+                age <= 0 || ast <= 0 || alt <= 0 || platelets <= 0) {
+                document.getElementById('errorMessage').textContent = "กรุณากรอกค่าที่เป็นตัวเลขบวกและถูกต้องสำหรับทุกช่อง (อายุ, AST, ALT, เกล็ดเลือด)";
+                document.getElementById('errorModal').classList.remove('hidden');
+                return;
+            }
+
+            // Platelet count input is in 10^3/uL, but the FIB-4 formula uses 10^9/L.
+            // Since 10^3/uL is equivalent to 10^9/L, we can use the input value directly in the calculation.
+            // However, typical lab reports might give platelets in (x 10^3/uL). We assume the input is in (x 10^9/L).
+            // Common practice: use Platelets in (10^9/L). If user inputs 250 (which is 250,000/uL), it means 250 x 10^9/L.
+            
+            // 2. Calculate FIB-4 score
+            const fib4 = (age * ast) / (platelets * Math.sqrt(alt));
+            const roundedFib4 = fib4.toFixed(2); // Round to 2 decimal places for display
+
+            // 3. Determine Risk Classification (based on the algorithm image)
+            let riskLevel = '';
+            let riskClass = ''; // Tailwind classes for styling
+            let recommendationText = '';
+
+            if (fib4 < 1.3) {
+                riskLevel = 'ความเสี่ยงต่ำ (Low Risk)';
+                riskClass = 'bg-green-100 text-green-800 border-green-300';
+                recommendationText = 'ความเสี่ยงต่ำต่อภาวะพังผืดขั้นสูง: แนะนำให้ประเมิน FIB-4 ซ้ำใน 2-3 ปี (ยกเว้นมีอาการทางคลินิกเปลี่ยนแปลง)';
+            } else if (fib4 >= 1.3 && fib4 <= 2.67) {
+                riskLevel = 'ความเสี่ยงปานกลาง/ไม่แน่ชัด (Indeterminate Risk)';
+                riskClass = 'bg-yellow-100 text-yellow-800 border-yellow-300';
+                recommendationText = 'ความเสี่ยงปานกลาง: แนะนำให้ทำการตรวจวัดความแข็งตัวของตับ (Liver Stiffness Measurement, LSM) ด้วย FibroScan หรือ MRE เพื่อประเมินเพิ่มเติม';
+            } else { // fib4 > 2.67
+                riskLevel = 'ความเสี่ยงสูง (High Risk)';
+                riskClass = 'bg-red-100 text-red-800 border-red-300';
+                recommendationText = 'ความเสี่ยงสูงต่อภาวะพังผืดขั้นสูง: แนะนำให้ปรึกษาแพทย์ผู้เชี่ยวชาญด้านตับ (Hepatologist) เพื่อประเมินและวางแผนการรักษาต่อไป';
+            }
+
+            // 4. Display Result
+            const resultContainer = document.getElementById('resultContainer');
+            const fib4ScoreDisplay = document.getElementById('fib4Score');
+            const riskDisplay = document.getElementById('riskDisplay');
+            const recommendation = document.getElementById('recommendation');
+
+            fib4ScoreDisplay.textContent = `FIB-4 Score: ${roundedFib4}`;
+            
+            riskDisplay.textContent = riskLevel;
+            riskDisplay.className = `p-4 rounded-lg text-center font-bold ${riskClass}`;
+
+            recommendation.innerHTML = `
+                <p class="font-semibold mb-2">ข้อแนะนำ:</p>
+                <p class="${riskClass.split(' ')[2].replace('text', 'border')} p-3 rounded-lg border-l-4">${recommendationText}</p>
+            `;
+
+            resultContainer.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
