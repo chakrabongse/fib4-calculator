@@ -1,26 +1,27 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>เครื่องคำนวณ FIB-4 สำหรับ NAFLD</title>
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#2563eb">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="icon" href="icons/icon-192.png">
-  <link rel="apple-touch-icon" href="icons/icon-512.png">
-  <script>
-    // ติดตั้ง service worker สำหรับ PWA
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js');
-    }
-  </script>
-  
-  <style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เครื่องคำนวณ FIB-4 สำหรับ NAFLD</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-512.png">
+    <script>
+        // ติดตั้ง service worker สำหรับ PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js');
+        }
+    </script>
+    
+<style>
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f4f7f9;
         }
+        /* Custom styles for better visual */
         .card {
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             transition: transform 0.3s ease;
@@ -38,9 +39,7 @@
     </style>
 </head>
 <body class="p-4 sm:p-8 min-h-screen flex items-center justify-center">
-
-    <!-- FIB-4 Calculator Card -->
-    <div class="w-full max-w-lg bg-white p-6 sm:p-8 rounded-xl card relative">
+    <div class="w-full max-w-lg bg-white p-6 sm:p-8 rounded-xl card">
         <h1 class="text-3xl font-bold text-gray-800 mb-2 text-center">เครื่องคำนวณ FIB-4</h1>
         <p class="text-center text-gray-600 mb-6">ประเมินความเสี่ยงภาวะพังผืดขั้นสูงในตับ (Advanced Fibrosis) สำหรับผู้ป่วย NAFLD/MASLD</p>
 
@@ -49,14 +48,17 @@
                 <span class="text-gray-700 font-semibold">อายุ (Age) <span class="text-sm font-normal text-gray-500">(ปี)</span></span>
                 <input type="number" id="inputAge" class="mt-1 block w-full input-field" min="1" required placeholder="เช่น 45">
             </label>
+            
             <label class="block">
                 <span class="text-gray-700 font-semibold">ค่า AST <span class="text-sm font-normal text-gray-500">(U/L)</span></span>
                 <input type="number" id="inputAST" class="mt-1 block w-full input-field" min="1" required placeholder="เช่น 35">
             </label>
+
             <label class="block">
                 <span class="text-gray-700 font-semibold">ค่า ALT <span class="text-sm font-normal text-gray-500">(U/L)</span></span>
                 <input type="number" id="inputALT" class="mt-1 block w-full input-field" min="1" required placeholder="เช่น 30">
             </label>
+
             <label class="block">
                 <span class="text-gray-700 font-semibold">เกล็ดเลือด (Platelet Count) <span class="text-sm font-normal text-gray-500">(10⁹/L)</span></span>
                 <input type="number" id="inputPlatelets" class="mt-1 block w-full input-field" min="10" required placeholder="เช่น 250">
@@ -67,15 +69,22 @@
                 class="w-full mt-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition duration-300 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-blue-300">
             คำนวณ FIB-4
         </button>
+        
+        <button id="installAppButton" onclick="handleInstallButtonClick()"
+                class="w-full mt-3 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition duration-300 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-indigo-300 hidden">
+            ⬇️ ติดตั้งแอป (Add to Home Screen)
+        </button>
 
         <div id="resultContainer" class="mt-8 p-5 rounded-xl border-2 border-gray-200 hidden">
             <h2 class="text-xl font-bold mb-3 text-gray-800">ผลการประเมิน</h2>
             <p id="fib4Score" class="text-2xl font-mono mb-4 text-center"></p>
+            
             <div id="riskDisplay" class="p-4 rounded-lg text-center font-bold"></div>
+
             <div id="recommendation" class="mt-4 text-gray-700"></div>
         </div>
-
-        <div id="errorModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4">
+        
+        <div id="errorModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div class="bg-white p-6 rounded-lg max-w-sm w-full shadow-2xl">
                 <h3 class="text-xl font-bold text-red-600 mb-3">⚠️ ข้อผิดพลาด</h3>
                 <p id="errorMessage" class="text-gray-700 mb-4">กรุณากรอกข้อมูลให้ครบถ้วนและตรวจสอบว่าค่าเป็นตัวเลขที่ถูกต้อง</p>
@@ -91,20 +100,66 @@
         </p>
     </div>
 
-    <!-- ปุ่มติดตั้ง PWA -->
-    <a id="installAppBtn" href="#" 
-       class="fixed bottom-5 right-5 bg-blue-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:bg-blue-700 transition transform hover:scale-105 hidden">
-       ⬇️ ติดตั้งแอป
-    </a>
-
     <script>
-        // FIB-4 Calculation Function
+        let deferredPrompt; // ใช้งานสำหรับ PWA Install
+        
+        // 1. ตรวจสอบและบันทึก Prompt สำหรับการติดตั้ง PWA
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // ป้องกันการแสดง prompt อัตโนมัติของเบราว์เซอร์
+            e.preventDefault();
+            // เก็บ event ไว้เพื่อใช้ในการแสดงผลเมื่อผู้ใช้คลิกปุ่ม
+            deferredPrompt = e;
+            // แสดงปุ่มติดตั้งแอป
+            showInstallPromotion();
+        });
+
+        // 2. แสดงปุ่มติดตั้งแอป
+        function showInstallPromotion() {
+            const installButton = document.getElementById('installAppButton');
+            // ตรวจสอบว่า deferredPrompt มีค่า และยังไม่ถูกติดตั้ง
+            if (deferredPrompt) {
+                installButton.classList.remove('hidden');
+            }
+        }
+
+        // 3. จัดการการคลิกปุ่มติดตั้ง
+        function handleInstallButtonClick() {
+            const installButton = document.getElementById('installAppButton');
+            if (deferredPrompt) {
+                // แสดง prompt การติดตั้ง
+                deferredPrompt.prompt();
+                // รอการตอบสนองจากผู้ใช้
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the A2HS prompt');
+                    } else {
+                        console.log('User dismissed the A2HS prompt');
+                    }
+                    // ล้าง deferredPrompt เมื่อใช้งานแล้ว
+                    deferredPrompt = null;
+                    // ซ่อนปุ่มทันทีเมื่อมีการคลิก
+                    installButton.classList.add('hidden');
+                });
+            }
+        }
+
+        // เพิ่ม Listener สำหรับกรณีที่ติดตั้งสำเร็จแล้ว
+        window.addEventListener('appinstalled', () => {
+            document.getElementById('installAppButton').classList.add('hidden');
+        });
+
+
+        /**
+         * Calculates the FIB-4 score and determines the risk category based on the provided NAFLD algorithm cutoffs.
+         */
         function calculateFIB4() {
+            // ... (โค้ดเดิม)
             const age = parseFloat(document.getElementById('inputAge').value);
             const ast = parseFloat(document.getElementById('inputAST').value);
             const alt = parseFloat(document.getElementById('inputALT').value);
             const platelets = parseFloat(document.getElementById('inputPlatelets').value);
 
+            // Hide previous results and errors
             document.getElementById('resultContainer').classList.add('hidden');
             document.getElementById('errorModal').classList.add('hidden');
 
@@ -114,60 +169,49 @@
                 document.getElementById('errorModal').classList.remove('hidden');
                 return;
             }
-
+            
+            // 2. Calculate FIB-4 score
             const fib4 = (age * ast) / (platelets * Math.sqrt(alt));
-            const roundedFib4 = fib4.toFixed(2);
+            const roundedFib4 = fib4.toFixed(2); // Round to 2 decimal places for display
 
+            // 3. Determine Risk Classification
             let riskLevel = '';
-            let riskClass = '';
+            let riskClass = ''; // Tailwind classes for styling
             let recommendationText = '';
 
+            // Cutoffs: < 1.3 (Low), > 2.67 (High)
             if (fib4 < 1.3) {
                 riskLevel = 'ความเสี่ยงต่ำ (Low Risk)';
                 riskClass = 'bg-green-100 text-green-800 border-green-300';
-                recommendationText = 'ความเสี่ยงต่ำต่อภาวะพังผืดขั้นสูง: แนะนำให้ประเมิน FIB-4 ซ้ำใน 2-3 ปี';
+                recommendationText = 'ความเสี่ยงต่ำต่อภาวะพังผืดขั้นสูง: แนะนำให้ประเมิน FIB-4 ซ้ำใน 2-3 ปี (ยกเว้นมีอาการทางคลินิกเปลี่ยนแปลง)';
             } else if (fib4 >= 1.3 && fib4 <= 2.67) {
                 riskLevel = 'ความเสี่ยงปานกลาง/ไม่แน่ชัด (Indeterminate Risk)';
                 riskClass = 'bg-yellow-100 text-yellow-800 border-yellow-300';
-                recommendationText = 'แนะนำให้ทำการตรวจวัดความแข็งตัวของตับ (LSM/FibroScan)';
-            } else {
+                recommendationText = 'ความเสี่ยงปานกลาง: แนะนำให้ทำการตรวจวัดความแข็งตัวของตับ (Liver Stiffness Measurement, LSM) ด้วย FibroScan หรือ MRE เพื่อประเมินเพิ่มเติม';
+            } else { // fib4 > 2.67
                 riskLevel = 'ความเสี่ยงสูง (High Risk)';
                 riskClass = 'bg-red-100 text-red-800 border-red-300';
-                recommendationText = 'แนะนำให้ปรึกษาแพทย์ผู้เชี่ยวชาญด้านตับ';
+                recommendationText = 'ความเสี่ยงสูงต่อภาวะพังผืดขั้นสูง: แนะนำให้ปรึกษาแพทย์ผู้เชี่ยวชาญด้านตับ (Hepatologist) เพื่อประเมินและวางแผนการรักษาต่อไป';
             }
 
+            // 4. Display Result
             const resultContainer = document.getElementById('resultContainer');
             const fib4ScoreDisplay = document.getElementById('fib4Score');
             const riskDisplay = document.getElementById('riskDisplay');
             const recommendation = document.getElementById('recommendation');
 
             fib4ScoreDisplay.textContent = `FIB-4 Score: ${roundedFib4}`;
+            
             riskDisplay.textContent = riskLevel;
             riskDisplay.className = `p-4 rounded-lg text-center font-bold ${riskClass}`;
-            recommendation.innerHTML = `<p class="font-semibold mb-2">ข้อแนะนำ:</p>
-                <p class="${riskClass.split(' ')[2].replace('text', 'border')} p-3 rounded-lg border-l-4">${recommendationText}</p>`;
+
+            recommendation.innerHTML = `
+                <p class="font-semibold mb-2">ข้อแนะนำ:</p>
+                <p class="${riskClass.split(' ')[2].replace('text', 'border')} p-3 rounded-lg border-l-4">${recommendationText}</p>
+            `;
 
             resultContainer.classList.remove('hidden');
         }
-
-        // PWA Install Button
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            document.getElementById('installAppBtn').classList.remove('hidden');
-        });
-
-        document.getElementById('installAppBtn').addEventListener('click', async (e) => {
-            e.preventDefault();
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const choiceResult = await deferredPrompt.userChoice;
-                console.log(`User response: ${choiceResult.outcome}`);
-                deferredPrompt = null;
-                document.getElementById('installAppBtn').classList.add('hidden');
-            }
-        });
     </script>
 </body>
 </html>
